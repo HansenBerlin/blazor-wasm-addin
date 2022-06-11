@@ -1,0 +1,21 @@
+﻿@page "/"
+@using Microsoft.Fast.Components.FluentUI
+
+@inject IJSRuntime _jsRuntimeService;
+
+<FluentButton Appearance="Appearance.Outline" style="width: 280px;" @onclick="SetupData" >SETUP</FluentButton>
+<FluentButton Appearance="Appearance.Outline" style="width: 280px;" @onclick="MoveData" >MOVE</FluentButton>
+
+@code{
+
+    private async Task SetupData()
+    {
+        await _jsRuntimeService.InvokeVoidAsync("setup");
+    }
+    
+    private async Task MoveData()
+    {
+        await _jsRuntimeService.InvokeVoidAsync("move");
+    }
+   
+}
