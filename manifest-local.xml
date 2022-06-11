@@ -9,17 +9,17 @@
     <DefaultLocale>en-US</DefaultLocale>
     <DisplayName DefaultValue="Hello world"/>
     <Description DefaultValue="A simple hello world Office Add-in."/>
-    <IconUrl DefaultValue="https://hansenberlin.github.io/blazor-wasm-addin/assets/icon-32.png"/>
-    <HighResolutionIconUrl DefaultValue="https://hansenberlin.github.io/blazor-wasm-addin/assets/icon-64.png"/>
+    <IconUrl DefaultValue="https://localhost:7105/assets/icon-32.png"/>
+    <HighResolutionIconUrl DefaultValue="https://localhost:7105/assets/icon-64.png"/>
     <SupportUrl DefaultValue="https://docs.microsoft.com/office/dev/add-ins/overview/office-add-in-code-samples"/>
     <AppDomains>
-        <AppDomain>https://hansenberlin.github.io/blazor-wasm-addin</AppDomain>
+        <AppDomain>https://localhost:7105</AppDomain>
     </AppDomains>
     <Hosts>
         <Host Name="Workbook"/>
     </Hosts>
     <DefaultSettings>
-        <SourceLocation DefaultValue="https://hansenberlin.github.io/blazor-wasm-addin"/>
+        <SourceLocation DefaultValue="https://localhost:7105"/>
     </DefaultSettings>
     <Permissions>ReadWriteDocument</Permissions>
     <VersionOverrides xmlns="http://schemas.microsoft.com/office/taskpaneappversionoverrides" xsi:type="VersionOverridesV1_0">
@@ -65,13 +65,13 @@
         </Hosts>
         <Resources>
             <bt:Images>
-                <bt:Image id="Icon.16x16" DefaultValue="https://hansenberlin.github.io/blazor-wasm-addin/assets/icon-16.png"/>
-                <bt:Image id="Icon.32x32" DefaultValue="https://hansenberlin.github.io/blazor-wasm-addin/assets/icon-32.png"/>
-                <bt:Image id="Icon.80x80" DefaultValue="https://hansenberlin.github.io/blazor-wasm-addin/assets/icon-80.png"/>
+                <bt:Image id="Icon.16x16" DefaultValue="https://localhost:7105/assets/icon-16.png"/>
+                <bt:Image id="Icon.32x32" DefaultValue="https://localhost:7105/assets/icon-32.png"/>
+                <bt:Image id="Icon.80x80" DefaultValue="https://localhost:7105/assets/icon-80.png"/>
             </bt:Images>
             <bt:Urls>
                 <bt:Url id="GetStarted.LearnMoreUrl" DefaultValue="http://go.microsoft.com/fwlink/?LinkId=276812"/>
-                <bt:Url id="Taskpane.Url" DefaultValue="https://hansenberlin.github.io/blazor-wasm-addin"/>
+                <bt:Url id="Taskpane.Url" DefaultValue="https://localhost:7105"/>
             </bt:Urls>
             <bt:ShortStrings>
                 <bt:String id="GetStarted.Title" DefaultValue="Get started with the Hello world add-in!"/>
