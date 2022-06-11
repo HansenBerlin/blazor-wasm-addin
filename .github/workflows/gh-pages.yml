@@ -20,7 +20,7 @@ jobs:
 
       # Publish the site
       - name: Publish
-        run: dotnet publish SampleApp.sln -c:Release -o:public -p:GHPages=true
+        run: dotnet publish web-addin.sln -c:Release -o:public -p:GHPages=true
 
       # Deploy the site
       - name: Deploy
