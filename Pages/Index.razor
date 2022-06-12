@@ -1,21 +1,95 @@
 ﻿@page "/"
 @using Microsoft.Fast.Components.FluentUI
-
+@using System.Text.Json
 @inject IJSRuntime _jsRuntimeService;
 
-<FluentButton Appearance="Appearance.Outline" style="width: 280px;" @onclick="SetupData" >SETUP</FluentButton>
-<FluentButton Appearance="Appearance.Outline" style="width: 280px;" @onclick="MoveData" >MOVE</FluentButton>
+<div>
+    <label for="table-raw" style="font-size: 12px">Choose table containing raw data:</label>
+    <FluentSelect id="table-raw" style="width: 280px; margin-bottom: 30px" @bind-Value="@TableSelection">
+                @if (Worksheets.Count > 0)
+                {
+                    foreach (var worksheet in Worksheets)
+                    {
+                        
+                        foreach (var table in worksheet.Tables)
+                        {
+                            <FluentOption>@($"{table.TableName} ({worksheet.SheetName})")</FluentOption>
+                        }
+                    }
+                }
+    </FluentSelect>
+</div>
+<div>
+    <label for="cat-var" style="font-size: 12px">Choose categorial variable</label>
+    <FluentSelect id="cat-var" style="width: 280px; margin-bottom: 30px" @bind-Value="@CategorialVariableSelection">
+        @if (Worksheets.Count > 0)
+        {
+            foreach (var worksheet in Worksheets)
+            {
+                foreach (var table in worksheet.Tables)
+                {
+                    foreach (var cat in table.Categories)
+                    {
+                        <FluentOption>@($"{cat} ({table.TableName})")</FluentOption>
+                    }
+                }
+            }
+        }
+    </FluentSelect>
+</div>
+
+
+<FluentButton Appearance="Appearance.Outline" style="width: 280px;" @onclick="GetSheets" >GET WORKSHEETS</FluentButton>
+<FluentButton Appearance="Appearance.Outline" style="width: 280px;" @onclick="SetupData" >DELETE WORKSHEETS</FluentButton>
+
 
 @code{
+    
+    private string TableSelection { get; set; } = "";
+    private string CategorialVariableSelection { get; set; } = "";
+    private List<WorksheetModel> Worksheets { get; set; } = new();
+    private JsonSerializerOptions _options;
 
-    private async Task SetupData()
+    protected override async Task OnInitializedAsync()
     {
-        await _jsRuntimeService.InvokeVoidAsync("setup");
+        var lDotNetReference = DotNetObjectReference.Create(this);
+        await _jsRuntimeService.InvokeVoidAsync("GLOBAL.SetDotnetReference", lDotNetReference);
+        await _jsRuntimeService.InvokeVoidAsync("listWorksheets");
     }
     
-    private async Task MoveData()
+    protected override async Task OnAfterRenderAsync(bool firstRender)
     {
-        await _jsRuntimeService.InvokeVoidAsync("move");
+        if (firstRender)
+        {
+            _options = new JsonSerializerOptions
+            {
+                PropertyNameCaseInsensitive = true
+            };
+        }
     }
-   
+    
+    private async Task SetupData()
+    {
+        await _jsRuntimeService.InvokeVoidAsync("wrapper");
+    }
+    
+    private async Task GetSheets()
+    {
+        await _jsRuntimeService.InvokeVoidAsync("listWorksheets");
+    }
+    
+    
+    [JSInvokable]
+    public void CallbackAllWorksheets(JsonElement worksheetsArray)
+    {
+        var tables = worksheetsArray.Deserialize<WorksheetModel[]>(_options);
+        Worksheets.Clear();
+        Worksheets.AddRange(tables);
+        
+    }
+
+    
+
+    
+
 }
