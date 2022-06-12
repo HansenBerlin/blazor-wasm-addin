@@ -49,12 +49,13 @@
     private string CategorialVariableSelection { get; set; } = "";
     private List<WorksheetModel> Worksheets { get; set; } = new();
     private JsonSerializerOptions _options;
+    private DotNetObjectReference<Index> lDotNetReference;
 
     protected override async Task OnInitializedAsync()
     {
-        var lDotNetReference = DotNetObjectReference.Create(this);
-        await _jsRuntimeService.InvokeVoidAsync("GLOBAL.SetDotnetReference", lDotNetReference);
-        await _jsRuntimeService.InvokeVoidAsync("listWorksheets");
+        lDotNetReference = DotNetObjectReference.Create(this);
+        //await _jsRuntimeService.InvokeVoidAsync("GLOBAL.SetDotnetReference", lDotNetReference);
+        await _jsRuntimeService.InvokeVoidAsync("listWorksheets", lDotNetReference);
     }
     
     protected override async Task OnAfterRenderAsync(bool firstRender)
@@ -75,7 +76,7 @@
     
     private async Task GetSheets()
     {
-        await _jsRuntimeService.InvokeVoidAsync("listWorksheets");
+        await _jsRuntimeService.InvokeVoidAsync("listWorksheets", lDotNetReference);
     }
     
     

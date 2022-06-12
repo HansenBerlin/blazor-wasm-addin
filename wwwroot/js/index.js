@@ -1,8 +1,4 @@
-var GLOBAL = {};
-GLOBAL.DotNetReference = null;
-GLOBAL.SetDotnetReference = function (pDotNetReference) {
-    GLOBAL.DotNetReference = pDotNetReference;
-};
+
 
 //sheet activate nach auswahl
 
@@ -96,7 +92,7 @@ async function tryCatch(callback) {
 
 
 
-async function listWorksheets() {
+async function listWorksheets(dotNetReference) {
     await Office.onReady();
     await Excel.run(async (context) => {
         const sheets = context.workbook.worksheets;
@@ -121,7 +117,7 @@ async function listWorksheets() {
             }
             allSheets.push({sheetname: sheets.items[i].name, tables: allTables});
         }
-        GLOBAL.DotNetReference.invokeMethodAsync("CallbackAllWorksheets", allSheets);
+        dotNetReference.invokeMethodAsync("CallbackAllWorksheets", allSheets);
     });
 }
 
