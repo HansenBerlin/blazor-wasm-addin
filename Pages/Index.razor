@@ -3,59 +3,63 @@
 @using System.Text.Json
 @inject IJSRuntime _jsRuntimeService;
 
+
 <div>
-    <label for="table-raw" style="font-size: 12px">Choose table containing raw data:</label>
-    <FluentSelect id="table-raw" style="width: 280px; margin-bottom: 30px" @bind-Value="@TableSelection">
-                @if (Worksheets.Count > 0)
-                {
-                    foreach (var worksheet in Worksheets)
-                    {
-                        
-                        foreach (var table in worksheet.Tables)
-                        {
-                            <FluentOption>@($"{table.TableName} ({worksheet.SheetName})")</FluentOption>
-                        }
-                    }
-                }
-    </FluentSelect>
+    <FluentSelect Items=@_tables @ref="selectOne"/>
 </div>
 <div>
-    <label for="cat-var" style="font-size: 12px">Choose categorial variable</label>
-    <FluentSelect id="cat-var" style="width: 280px; margin-bottom: 30px" @bind-Value="@CategorialVariableSelection">
-        @if (Worksheets.Count > 0)
-        {
-            foreach (var worksheet in Worksheets)
-            {
-                foreach (var table in worksheet.Tables)
-                {
-                    foreach (var cat in table.Categories)
-                    {
-                        <FluentOption>@($"{cat} ({table.TableName})")</FluentOption>
-                    }
-                }
-            }
-        }
-    </FluentSelect>
+    <FluentSelect Items=@_categories @ref="selectTwo" />
 </div>
 
-
-<FluentButton Appearance="Appearance.Outline" style="width: 280px;" @onclick="GetSheets" >GET WORKSHEETS</FluentButton>
-<FluentButton Appearance="Appearance.Outline" style="width: 280px;" @onclick="SetupData" >DELETE WORKSHEETS</FluentButton>
-
+<FluentButton Appearance="Appearance.Outline" style="width: 280px;" @onclick="Write">CONSOLE</FluentButton>
+<div>
+    Tables: @One
+</div>
+<div>
+    Cats: @Two
+</div>
 
 @code{
+
+    private string one;
+    private string One
+    {
+        get => GetTables();
+        set => one = value;
+    }
     
-    private string TableSelection { get; set; } = "";
-    private string CategorialVariableSelection { get; set; } = "";
+    private string two;
+    private string Two
+    {
+        get => GetCats();
+        set => two = value;
+    }
+    
+    private string Sheet
+    {
+        get => GetSheet();
+    }
+
+    
+    
+
+
+    readonly List<Option<string>> _categories = new();
+    readonly List<Option<string>> _tables = new();
+
+    FluentSelect<string> selectOne;
+    FluentSelect<string> selectTwo;
+
     private List<WorksheetModel> Worksheets { get; set; } = new();
     private JsonSerializerOptions _options;
-    private DotNetObjectReference<Index> lDotNetReference;
+    private DotNetObjectReference<Index> _lDotNetReference;
 
     protected override async Task OnInitializedAsync()
     {
-        lDotNetReference = DotNetObjectReference.Create(this);
-        //await _jsRuntimeService.InvokeVoidAsync("GLOBAL.SetDotnetReference", lDotNetReference);
-        await _jsRuntimeService.InvokeVoidAsync("listWorksheets", lDotNetReference);
+        _lDotNetReference = DotNetObjectReference.Create(this);
+        await _jsRuntimeService.InvokeVoidAsync("listWorksheets", _lDotNetReference);
+
+        //StateHasChanged();
     }
     
     protected override async Task OnAfterRenderAsync(bool firstRender)
@@ -67,16 +71,29 @@
                 PropertyNameCaseInsensitive = true
             };
         }
+
     }
     
     private async Task SetupData()
     {
-        await _jsRuntimeService.InvokeVoidAsync("wrapper");
+        //await _jsRuntimeService.InvokeVoidAsync("wrapper", SheetSelected, TableSelection);
     }
     
     private async Task GetSheets()
     {
-        await _jsRuntimeService.InvokeVoidAsync("listWorksheets", lDotNetReference);
+        await _jsRuntimeService.InvokeVoidAsync("listWorksheets", _lDotNetReference);
+    }
+    
+    private async Task Write()
+    {
+        //var cat = GetCats();
+        //var tab = GetTables();
+        
+        //await _jsRuntimeService.InvokeVoidAsync("write", selectOne.Value, "value 1");
+        await _jsRuntimeService.InvokeVoidAsync("write", Sheet, One);
+        await _jsRuntimeService.InvokeVoidAsync("wrapper", "new1", One, "A", "x");
+        await _jsRuntimeService.InvokeVoidAsync("wrapper", "new2", One, "A", "y");
+        await _jsRuntimeService.InvokeVoidAsync("wrapper", "new3", One, "A", "z");
     }
     
     
@@ -86,7 +103,96 @@
         var tables = worksheetsArray.Deserialize<WorksheetModel[]>(_options);
         Worksheets.Clear();
         Worksheets.AddRange(tables);
+        Update2();
+        Update();
+        //StateHasChanged();
+    }
+
+
+    
+    void Update()
+    {
+        _categories.Clear();
+        foreach (var worksheet in Worksheets)
+        {
+            foreach (var table in worksheet.Tables)
+            {
+                for (int i = 0; i < table.Categories.Length; i++)
+                {
+                    bool state = i == 0;
+                    var option = new Option<string>
+                    {
+                        Selected = state,
+                        Key = i.ToString(),
+                        Value = table.Categories[i]
+                    };
+                    
+                    _categories.Add(option);
+                }
+            }
+        }
         
+    }
+    
+    void Update2()
+    {
+        _tables.Clear();
+        foreach (var worksheet in Worksheets)
+        {
+            for (int i = 0; i < worksheet.Tables.Length; i++)
+            {
+                bool state = i == 0;
+                var option = new Option<string>
+                {
+                    Selected = state,
+                    Key = i.ToString(),
+                    Value = worksheet.Tables[i].TableName
+                };
+                
+                _tables.Add(option);
+            }
+        }
+        
+    }
+    
+    string GetCats()
+    {
+        foreach (var cat in _categories)
+        {
+            if (cat.Selected)
+                return cat.Value;
+        }
+        return "not cat found";
+    }
+    
+    string GetTables()
+    {
+        foreach (var tab in _tables)
+        {
+            if (tab.Selected)
+                return tab.Value;
+        }
+        return "not table found";
+    }
+    
+    string GetSheet()
+    {
+        var table = GetTables();
+        foreach (var tab in _tables)
+        {
+            if (tab.Selected)
+            {
+                foreach (var sheet in Worksheets)
+                {
+                    foreach (var t in sheet.Tables)
+                    {
+                        if (t.TableName == table)
+                            return sheet.SheetName;
+                    }
+                }
+            }
+        }
+        return "no sheet found";
     }
 
     

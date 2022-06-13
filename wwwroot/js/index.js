@@ -1,21 +1,31 @@
-
-
-//sheet activate nach auswahl
-
-
-async function wrapper() {
-    await setup();
-    await createWorkbook()
-    await copyTableHeaders();
-    await applyFilterFunction();
+async function wrapper(sheetNameNew, sourceTable, variable, value) {
+    await createSheet(sheetNameNew)
+    await copyTableHeaders(sourceTable, sheetNameNew);
+    await applyFilterFunction(sheetNameNew, sourceTable, variable, value);
+    //await createTable(sheetNameNew);
 }
 
 
-async function copyTableHeaders() {
+async function write(tables, cats) {
+    console.log(tables + " " + cats)
+}
+async function createTable(tablesheet){
     await Excel.run(async (context) => {
-        const sheet = context.workbook.worksheets.getItem("neu");
+        let sheet = context.workbook.worksheets.getItem(tablesheet);
+        let range = sheet.getUsedRange();
+        range.load("address");
+        await context.sync();
+        let expensesTable = sheet.tables.add(range, true);
+        expensesTable.name = tablesheet;
+        await context.sync();
+    });
+}
+
+async function copyTableHeaders(tableName, sheetName) {
+    await Excel.run(async (context) => {
+        const sheet = context.workbook.worksheets.getItem(sheetName);
         const targetCell = sheet.getRange("A1");
-        targetCell.formulas = [["=ExpensesTable[#Headers]"]];
+        targetCell.formulas = [["="+tableName+"[#Headers]"]];
         const spillRange = targetCell.getSpillingToRange();
         spillRange.load("address");
         sheet.getUsedRange().format.autofitColumns();
@@ -23,12 +33,13 @@ async function copyTableHeaders() {
     });
 }
 
-async function applyFilterFunction() {
+async function applyFilterFunction(sheetname, table, variable, value) {
     await Excel.run(async (context) => {
-        const sheet = context.workbook.worksheets.getItem("neu");
+        const sheet = context.workbook.worksheets.getItem(sheetname);
         const targetCell = sheet.getRange("A2");
         targetCell.formulas = [
-            ['=FILTER(Sample!ExpensesTable[#All], Sample!ExpensesTable[[#All],[Category]]="Groceries", "")']
+            ['=FILTER('+table+'[#All],' +table + '[[#All],['+variable+']]="'+value+'", "")']
+            //['=FILTER(Tabelle1[#All], Tabelle1[[#All],[A]]="1", "")']
         ];
         const spillRange = targetCell.getSpillingToRange();
         spillRange.load("address");
@@ -37,10 +48,10 @@ async function applyFilterFunction() {
     });
 }
 
-async function createWorkbook() {
+async function createSheet(sheetName) {
     await Excel.run(async (context) => {
-        context.workbook.worksheets.getItemOrNullObject("neu").delete();
-        const sheet = context.workbook.worksheets.add("neu");
+        context.workbook.worksheets.getItemOrNullObject(sheetName).delete();
+        const sheet = context.workbook.worksheets.add(sheetName);
         sheet.load("name, position");
         await context.sync();
     });
