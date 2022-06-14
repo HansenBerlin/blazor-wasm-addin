@@ -5,10 +5,10 @@
            xmlns:ov="http://schemas.microsoft.com/office/taskpaneappversionoverrides" xsi:type="TaskPaneApp">
     <Id>775091b3-e24a-4cf4-a65b-26976fda4f3c</Id>
     <Version>1.0.0.0</Version>
-    <ProviderName>Contoso</ProviderName>
+    <ProviderName>bonogames</ProviderName>
     <DefaultLocale>en-US</DefaultLocale>
-    <DisplayName DefaultValue="Hello world"/>
-    <Description DefaultValue="A simple hello world Office Add-in."/>
+    <DisplayName DefaultValue="Table Split Bot"/>
+    <Description DefaultValue="Split your tables into new worksheets by distinct values of a chosen column."/>
     <IconUrl DefaultValue="https://hansenberlin.github.io/blazor-wasm-addin/assets/icon-32.png"/>
     <HighResolutionIconUrl DefaultValue="https://hansenberlin.github.io/blazor-wasm-addin/assets/icon-64.png"/>
     <SupportUrl DefaultValue="https://docs.microsoft.com/office/dev/add-ins/overview/office-add-in-code-samples"/>
@@ -74,14 +74,14 @@
                 <bt:Url id="Taskpane.Url" DefaultValue="https://hansenberlin.github.io/blazor-wasm-addin"/>
             </bt:Urls>
             <bt:ShortStrings>
-                <bt:String id="GetStarted.Title" DefaultValue="Get started with the Hello world add-in!"/>
-                <bt:String id="CommandsGroup.Label" DefaultValue="Contoso Add-in"/>
-                <bt:String id="TaskpaneButton.Label" DefaultValue="Hello world"/>
-                <bt:String id="TaskpaneButton.SupertipTitle" DefaultValue="Hello world"/>
+                <bt:String id="GetStarted.Title" DefaultValue="Get started!"/>
+                <bt:String id="CommandsGroup.Label" DefaultValue="Table Split Bot"/>
+                <bt:String id="TaskpaneButton.Label" DefaultValue="Table Split Bot"/>
+                <bt:String id="TaskpaneButton.SupertipTitle" DefaultValue="Table Split Bot: Inspired by a university project at HWR Berlin"/>
             </bt:ShortStrings>
             <bt:LongStrings>
-                <bt:String id="GetStarted.Description" DefaultValue="Your sample add-in loaded succesfully. Go to the HOME tab and click the 'Hello world' button to get started."/>
-                <bt:String id="TaskpaneButton.SupertipText" DefaultValue="Open the Hello world add-in"/>
+                <bt:String id="GetStarted.Description" DefaultValue="Enjoy this instead of polluting your system with VBA code."/>
+                <bt:String id="TaskpaneButton.SupertipText" DefaultValue=""/>
             </bt:LongStrings>
         </Resources>
     </VersionOverrides>

@@ -48,16 +48,18 @@ async function copyVisibleRange(worksheetSource, tableSource, worksheetDest) {
         const table = sheet.tables.getItem(tableSource);
         const visibleRange = table.getRange().getVisibleView().load("values");
         await context.sync();
-        context.workbook.worksheets.getItemOrNullObject(worksheetDest).delete();
-        let sheetDest = context.workbook.worksheets.add(worksheetDest);
+        
         let values = visibleRange.values;
         let rowCount = values.length;
         let columnCount = values[0].length;
-        let range = sheetDest.getRangeByIndexes(0, 0, rowCount, columnCount);
+
+        context.workbook.worksheets.getItemOrNullObject(worksheetDest).delete();
+        let sheetDest = context.workbook.worksheets.add(worksheetDest);
+        let range = sheetDest.getRangeByIndexes(0, 0, rowCount, columnCount);        
         range.values = values;
         sheetDest.getUsedRange().format.autofitColumns();
         sheetDest.getUsedRange().format.autofitRows();
-        sheetDest.activate();
+       
         let newTable = sheetDest.tables.add(range, true);
         newTable.name = worksheetDest;
         await context.sync();

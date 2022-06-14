@@ -5,22 +5,15 @@
 
 
 <div>
-    <FluentSelect Items=@_tables />
+    <label for="tables" style="font-size: 12px">Available tables</label>
+    <FluentSelect id="tables" style="width: 280px; margin-bottom: 15px" Items=@_tables />
 </div>
 <div>
-    <FluentSelect Items=@_categories />
+     <label for="categories" style="font-size: 12px">Available categories (columns)</label>
+        <FluentSelect id="categories" style="width: 280px; margin-bottom: 30px" Items=@_categories />
 </div>
 
 <FluentButton Appearance="Appearance.Outline" style="width: 280px;" @onclick="Write">CREATE</FluentButton>
-<div>
-    Tables: @SelectedTable
-</div>
-<div>
-    Cats: @SelectedVariable
-</div>
-<div>
-    Cats: @SelectedSheet
-</div>
 
 @code{
 
