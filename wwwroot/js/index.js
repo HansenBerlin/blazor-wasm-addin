@@ -1,25 +1,100 @@
-async function wrapper(sheetNameNew, sourceTable, variable, value) {
-    await createSheet(sheetNameNew)
-    await copyTableHeaders(sourceTable, sheetNameNew);
-    await applyFilterFunction(sheetNameNew, sourceTable, variable, value);
-    //await createTable(sheetNameNew);
+async function wrapper2(sheetNameNew, sourceSheet, sourceTable, variable, value) {
+    await clearFilters(sourceSheet, sourceTable);
+    await filterTable(sourceSheet, sourceTable, variable, value);
+    await copyVisibleRange(sourceSheet, sourceTable, sheetNameNew);    
 }
 
 
-async function write(tables, cats) {
-    console.log(tables + " " + cats)
-}
-async function createTable(tablesheet){
+async function filterTable(worksheet, sourceTable, variable, value) {
     await Excel.run(async (context) => {
-        let sheet = context.workbook.worksheets.getItem(tablesheet);
-        let range = sheet.getUsedRange();
-        range.load("address");
-        await context.sync();
-        let expensesTable = sheet.tables.add(range, true);
-        expensesTable.name = tablesheet;
+        const sheet = context.workbook.worksheets.getItem(worksheet);
+        const table = sheet.tables.getItem(sourceTable);
+        let filter = table.columns.getItem(variable).filter;
+        filter.apply({
+            filterOn: Excel.FilterOn.values,
+            values: [value]
+        });
         await context.sync();
     });
 }
+
+async function clearFilters(worksheet, sourceTable) {
+    await Excel.run(async (context) => {
+        const sheet = context.workbook.worksheets.getItem(worksheet);
+        const table = sheet.tables.getItem(sourceTable);
+        table.clearFilters();
+        await context.sync();
+    });
+}
+
+
+async function copyVisibleRange2(worksheetSource, tableSource, worksheetDest) {
+    await Excel.run(async (context) => {
+        const sheet = context.workbook.worksheets.getItem(worksheetSource);
+        const table = sheet.tables.getItem(tableSource);
+        const visibleRange = table.getDataBodyRange().getVisibleView().load("values");
+        visibleRange.load("address");
+        await context.sync();        
+        context.workbook.worksheets.getItemOrNullObject(worksheetDest).delete();
+        const sheetDest = context.workbook.worksheets.add(worksheetDest);
+        sheetDest.getRange("A1").copyFrom(visibleRange);
+        await context.sync();
+    });
+}
+
+async function copyVisibleRange(worksheetSource, tableSource, worksheetDest) {
+    await Excel.run(async (context) => {
+        const sheet = context.workbook.worksheets.getItem(worksheetSource);
+        const table = sheet.tables.getItem(tableSource);
+        const visibleRange = table.getRange().getVisibleView().load("values");
+        await context.sync();
+        context.workbook.worksheets.getItemOrNullObject(worksheetDest).delete();
+        let sheetDest = context.workbook.worksheets.add(worksheetDest);
+        let values = visibleRange.values;
+        let rowCount = values.length;
+        let columnCount = values[0].length;
+        let range = sheetDest.getRangeByIndexes(0, 0, rowCount, columnCount);
+        range.values = values;
+        sheetDest.getUsedRange().format.autofitColumns();
+        sheetDest.getUsedRange().format.autofitRows();
+        sheetDest.activate();
+        let newTable = sheetDest.tables.add(range, true);
+        newTable.name = worksheetDest;
+        await context.sync();
+    });
+}
+
+//top!
+async function copyTableToAnotherSheet(){
+    await Excel.run(async (context) => {
+        let sheet1 = context.workbook.worksheets.getItem("Tabelle1");
+        const table = sheet1.tables.getItem("Tabelle1");
+        let range = table.getRange();
+        range.load("address");
+        await context.sync();
+
+        let sheet2 = context.workbook.worksheets.getItem("Tabelle3");
+        sheet2.getRange("A1").copyFrom(range);
+        await context.sync();
+    });
+}
+
+//top!
+async function getValuesFromColumn(worksheetSource, tableSource, column) {
+    return new Office.Promise(async function (resolve) {
+        await Excel.run(async (context) => {
+            let sheet = context.workbook.worksheets.getItem(worksheetSource);
+            const table = sheet.tables.getItem(tableSource);
+            const columnRange = table.columns.getItem(column).getDataBodyRange().load("values");
+            await sheet.context.sync();
+            const columnValues = columnRange.values;
+            await context.sync();
+            resolve(columnValues);
+        });
+    })
+   
+}
+
 
 async function copyTableHeaders(tableName, sheetName) {
     await Excel.run(async (context) => {
@@ -57,52 +132,6 @@ async function createSheet(sheetName) {
     });
 }
 
-/** Create a new table with sample data */
-async function setup() {
-    await Excel.run(async (context) => {
-        context.workbook.worksheets.getItemOrNullObject("Sample").delete();
-        const sheet = context.workbook.worksheets.add("Sample");
-
-        const expensesTable = sheet.tables.add("A4:D4", true /*hasHeaders*/);
-        expensesTable.name = "ExpensesTable";
-
-        expensesTable.getHeaderRowRange().values = [["Date", "Merchant", "Category", "Amount"]];
-
-        expensesTable.rows.add(null /*add at the end*/, [
-            ["1/1/2020", "The Phone Company", "Communications", "$120"],
-            ["1/2/2020", "Northwind Electric Cars", "Transportation", "$142"],
-            ["1/5/2020", "Best For You Organics Company", "Groceries", "$27"],
-            ["1/10/2020", "Coho Vineyard", "Restaurant", "$33"],
-            ["1/11/2020", "Bellows College", "Education", "$350"],
-            ["1/15/2020", "Trey Research", "Other", "$135"],
-            ["1/15/2020", "Best For You Organics Company", "Groceries", "$97"]
-        ]);
-
-        sheet.getRange("A2:H2").values = [["Transactions", , , , , , "Category", "Groceries"]];
-        sheet.getRange("A2").style = "Heading1";
-        sheet.getRange("G2").style = "Heading2";
-        sheet.getRange("H2").format.fill.color = "#EEEE99";
-
-        sheet.getUsedRange().format.autofitColumns();
-        sheet.getUsedRange().format.autofitRows();
-
-        sheet.activate();
-        await context.sync();
-    });
-}
-
-/** Default helper for invoking an action and handling errors. */
-async function tryCatch(callback) {
-    try {
-        await callback();
-    } catch (error) {
-        // Note: In a production add-in, you'd want to notify the user through your add-in's UI.
-        console.error(error);
-    }
-}
-
-
-
 async function listWorksheets(dotNetReference) {
     await Office.onReady();
     await Excel.run(async (context) => {
@@ -131,56 +160,3 @@ async function listWorksheets(dotNetReference) {
         dotNetReference.invokeMethodAsync("CallbackAllWorksheets", allSheets);
     });
 }
-
-
-async function addTable(dotNetReference) {await Office.onReady();
-    await Excel.run(async (context) => {
-        const sheet = context.workbook.worksheets.get("neu");
-        const expensesTable = sheet.tables.add("A1:D1", true /*hasHeaders*/);
-        expensesTable.name = "ExpensesTable";
-
-        expensesTable.getHeaderRowRange().values = [["Date", "Merchant", "Category", "Amount"]];
-
-        expensesTable.rows.add(null /*add at the end*/, [
-            ["1/1/2017", "The Phone Company", "Communications", "$120"],
-            ["1/2/2017", "Northwind Electric Cars", "Transportation", "$142"],
-            ["1/5/2017", "Best For You Organics Company", "Groceries", "$27"],
-            ["1/10/2017", "Coho Vineyard", "Restaurant", "$33"],
-            ["1/11/2017", "Bellows College", "Education", "$350"],
-            ["1/15/2017", "Trey Research", "Other", "$135"],
-            ["1/15/2017", "Best For You Organics Company", "Groceries", "$97"]
-        ]);
-
-        sheet.getUsedRange().format.autofitColumns();
-        sheet.getUsedRange().format.autofitRows();
-
-        sheet.activate();
-    });
-}
-
-
-async function getTables2(dotNetReference) {await Office.onReady();
-    await Excel.run(async (context) => {
-        const sheet = context.workbook.worksheets.get("neu");
-        const expensesTable = sheet.tables.get();
-        expensesTable.name = "ExpensesTable";
-
-        expensesTable.getHeaderRowRange().values = [["Date", "Merchant", "Category", "Amount"]];
-
-        expensesTable.rows.add(null /*add at the end*/, [
-            ["1/1/2017", "The Phone Company", "Communications", "$120"],
-            ["1/2/2017", "Northwind Electric Cars", "Transportation", "$142"],
-            ["1/5/2017", "Best For You Organics Company", "Groceries", "$27"],
-            ["1/10/2017", "Coho Vineyard", "Restaurant", "$33"],
-            ["1/11/2017", "Bellows College", "Education", "$350"],
-            ["1/15/2017", "Trey Research", "Other", "$135"],
-            ["1/15/2017", "Best For You Organics Company", "Groceries", "$97"]
-        ]);
-
-        sheet.getUsedRange().format.autofitColumns();
-        sheet.getUsedRange().format.autofitRows();
-
-        sheet.activate();
-    });
-}
-

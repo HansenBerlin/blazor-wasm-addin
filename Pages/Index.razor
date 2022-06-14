@@ -5,51 +5,31 @@
 
 
 <div>
-    <FluentSelect Items=@_tables @ref="selectOne"/>
+    <FluentSelect Items=@_tables />
 </div>
 <div>
-    <FluentSelect Items=@_categories @ref="selectTwo" />
+    <FluentSelect Items=@_categories />
 </div>
 
-<FluentButton Appearance="Appearance.Outline" style="width: 280px;" @onclick="Write">CONSOLE</FluentButton>
+<FluentButton Appearance="Appearance.Outline" style="width: 280px;" @onclick="Write">CREATE</FluentButton>
 <div>
-    Tables: @One
+    Tables: @SelectedTable
 </div>
 <div>
-    Cats: @Two
+    Cats: @SelectedVariable
+</div>
+<div>
+    Cats: @SelectedSheet
 </div>
 
 @code{
 
-    private string one;
-    private string One
-    {
-        get => GetTables();
-        set => one = value;
-    }
-    
-    private string two;
-    private string Two
-    {
-        get => GetCats();
-        set => two = value;
-    }
-    
-    private string Sheet
-    {
-        get => GetSheet();
-    }
-
-    
-    
-
+    private string SelectedTable => GetTables();
+    private string SelectedVariable => GetCats();
+    private string SelectedSheet => GetSheet();
 
     readonly List<Option<string>> _categories = new();
     readonly List<Option<string>> _tables = new();
-
-    FluentSelect<string> selectOne;
-    FluentSelect<string> selectTwo;
-
     private List<WorksheetModel> Worksheets { get; set; } = new();
     private JsonSerializerOptions _options;
     private DotNetObjectReference<Index> _lDotNetReference;
@@ -71,32 +51,31 @@
                 PropertyNameCaseInsensitive = true
             };
         }
-
-    }
-    
-    private async Task SetupData()
-    {
-        //await _jsRuntimeService.InvokeVoidAsync("wrapper", SheetSelected, TableSelection);
-    }
-    
-    private async Task GetSheets()
-    {
-        await _jsRuntimeService.InvokeVoidAsync("listWorksheets", _lDotNetReference);
     }
     
     private async Task Write()
     {
-        //var cat = GetCats();
-        //var tab = GetTables();
-        
-        //await _jsRuntimeService.InvokeVoidAsync("write", selectOne.Value, "value 1");
-        await _jsRuntimeService.InvokeVoidAsync("write", Sheet, One);
-        await _jsRuntimeService.InvokeVoidAsync("wrapper", "new1", One, "A", "x");
-        await _jsRuntimeService.InvokeVoidAsync("wrapper", "new2", One, "A", "y");
-        await _jsRuntimeService.InvokeVoidAsync("wrapper", "new3", One, "A", "z");
+        var sheet = SelectedSheet;
+        var table = SelectedTable;
+        var variable = SelectedVariable;
+        var json = await _jsRuntimeService.InvokeAsync<JsonElement>("getValuesFromColumn", sheet, table, variable);
+
+        var tables = json.Deserialize<string[][]>(_options);
+
+        List<string> distinctValues = new();
+        (tables ?? Array.Empty<string[]>()).ToList().ForEach(e =>
+        {
+            if (distinctValues.Contains(e[0]) == false)
+                distinctValues.Add(e[0]);
+        });
+        foreach (var val in distinctValues)
+        {
+            string sheetNew = $"{table}_{variable}_{val}";
+            await _jsRuntimeService.InvokeVoidAsync("wrapper2", sheetNew, sheet, table, variable, val);
+        }
+        await _jsRuntimeService.InvokeVoidAsync("clearFilters", sheet, table);
     }
-    
-    
+
     [JSInvokable]
     public void CallbackAllWorksheets(JsonElement worksheetsArray)
     {
@@ -108,8 +87,6 @@
         //StateHasChanged();
     }
 
-
-    
     void Update()
     {
         _categories.Clear();
@@ -131,7 +108,6 @@
                 }
             }
         }
-        
     }
     
     void Update2()
@@ -152,7 +128,6 @@
                 _tables.Add(option);
             }
         }
-        
     }
     
     string GetCats()
@@ -194,9 +169,4 @@
         }
         return "no sheet found";
     }
-
-    
-
-    
-
 }
