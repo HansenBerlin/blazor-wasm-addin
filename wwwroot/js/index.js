@@ -1,21 +1,105 @@
-async function wrapper2(sheetNameNew, sourceSheet, sourceTable, variable, value) {
-    await clearFilters(sourceSheet, sourceTable);
-    await filterTable(sourceSheet, sourceTable, variable, value);
-    await copyVisibleRange(sourceSheet, sourceTable, sheetNameNew);    
+async function wrapper2(sourceSheet, sourceTable, variable, v) {
+    await Office.onReady();
+    return new Office.Promise(async function (resolve) {
+        await Excel.run(async (context) => {
+            for (let j = 0; j < v.length; j++) {
+                console.log(v[j] + " " + sourceSheet + " " + sourceTable + " " + variable);
+                let sheet = context.workbook.worksheets.getItem(sourceSheet);
+                sheet.load("items/name");
+                await context.sync();
+                
+                let table = sheet.tables.getItem(sourceTable);
+                table.clearFilters();
+                console.log(context);
+                
+                await context.sync();
+
+                let filter = table.columns.getItem(variable).filter;
+                filter.apply({
+                    filterOn: Excel.FilterOn.values,
+                    values: [v[j]]
+                });
+                await context.sync();
+
+                //await clearFilters(sourceSheet, sourceTable);
+                //await filterTable(sourceSheet, sourceTable, variable, j);
+                let visibleRange = table.getRange().getVisibleView().load("values");
+                await sheet.sync();
+
+                let values = visibleRange.values;
+                let rowCount = values.length;
+                let columnCount = values[0].length;
+                let worksheetDest = sourceSheet + variable + j;
+                context.workbook.worksheets.getItemOrNullObject(worksheetDest).delete();
+                let sheetDest = context.workbook.worksheets.add(worksheetDest);
+                let range = sheetDest.getRangeByIndexes(0, 0, rowCount, columnCount);
+                range.values = values;
+                sheetDest.getUsedRange().format.autofitColumns();
+                sheetDest.getUsedRange().format.autofitRows();
+
+                let newTable = sheetDest.tables.add(range, true);
+                newTable.name = worksheetDest;
+
+                //await copyVisibleRange(sheet, table, sourceSheet + variable + j, context);
+                await context.sync();
+            }
+        });
+        resolve("ok");
+    });
+}
+
+
+async function add(sourceSheet, sourceTable, variable, v) {
+    await Excel.run(async (context) => {
+        await Office.onReady();
+        for (let j = 0; j < v.length; j++) {
+            console.log(v[j] + " " + sourceSheet + " " + sourceTable + " " + variable);
+            const sheet = context.workbook.worksheets.getItem(sourceSheet);
+            const table = sheet.tables.getItem(sourceTable);
+            table.clearFilters();
+            let filter = table.columns.getItem(variable).filter;
+            filter.apply({
+                filterOn: Excel.FilterOn.values,
+                values: [v[j]]
+            });
+            //await clearFilters(sourceSheet, sourceTable);
+            //await filterTable(sourceSheet, sourceTable, variable, j);
+            const visibleRange = table
+                .getRange()
+                .getVisibleView()
+                .load("values");
+            await context.sync();
+
+            let values = visibleRange.values;
+            let rowCount = values.length;
+            let columnCount = values[0].length;
+            let worksheetDest = sourceSheet + variable + j;
+            context.workbook.worksheets.getItemOrNullObject(worksheetDest).delete();
+            let sheetDest = context.workbook.worksheets.add(worksheetDest);
+            let range = sheetDest.getRangeByIndexes(0, 0, rowCount, columnCount);
+            range.values = values;
+            sheetDest.getUsedRange().format.autofitColumns();
+            sheetDest.getUsedRange().format.autofitRows();
+
+            let newTable = sheetDest.tables.add(range, true);
+            newTable.name = worksheetDest;
+
+            //await copyVisibleRange(sheet, table, sourceSheet + variable + j, context);
+            await context.sync();
+        }
+    });
 }
 
 
 async function filterTable(worksheet, sourceTable, variable, value) {
-    await Excel.run(async (context) => {
-        const sheet = context.workbook.worksheets.getItem(worksheet);
-        const table = sheet.tables.getItem(sourceTable);
-        let filter = table.columns.getItem(variable).filter;
-        filter.apply({
-            filterOn: Excel.FilterOn.values,
-            values: [value]
-        });
-        await context.sync();
+    const sheet = context.workbook.worksheets.getItem(worksheet);
+    const table = sheet.tables.getItem(sourceTable);
+    let filter = table.columns.getItem(variable).filter;
+    filter.apply({
+        filterOn: Excel.FilterOn.values,
+        values: [value]
     });
+    await context.sync();
 }
 
 async function clearFilters(worksheet, sourceTable) {
@@ -27,59 +111,37 @@ async function clearFilters(worksheet, sourceTable) {
     });
 }
 
-
-async function copyVisibleRange2(worksheetSource, tableSource, worksheetDest) {
-    await Excel.run(async (context) => {
-        const sheet = context.workbook.worksheets.getItem(worksheetSource);
-        const table = sheet.tables.getItem(tableSource);
-        const visibleRange = table.getDataBodyRange().getVisibleView().load("values");
-        visibleRange.load("address");
-        await context.sync();        
-        context.workbook.worksheets.getItemOrNullObject(worksheetDest).delete();
-        const sheetDest = context.workbook.worksheets.add(worksheetDest);
-        sheetDest.getRange("A1").copyFrom(visibleRange);
-        await context.sync();
-    });
-}
-
 async function copyVisibleRange(worksheetSource, tableSource, worksheetDest) {
-    await Excel.run(async (context) => {
-        const sheet = context.workbook.worksheets.getItem(worksheetSource);
-        const table = sheet.tables.getItem(tableSource);
-        const visibleRange = table.getRange().getVisibleView().load("values");
-        await context.sync();
-        
-        let values = visibleRange.values;
-        let rowCount = values.length;
-        let columnCount = values[0].length;
+    return new Office.Promise(async function (resolve) {
+        await Excel.run(async (context) => {
+            const sheet = context.workbook.worksheets.getItem(worksheetSource);
+            const table = sheet.tables.getItem(tableSource);
+            const visibleRange = table.getRange().getVisibleView().load("values");
+            await context.sync();
 
-        context.workbook.worksheets.getItemOrNullObject(worksheetDest).delete();
-        let sheetDest = context.workbook.worksheets.add(worksheetDest);
-        let range = sheetDest.getRangeByIndexes(0, 0, rowCount, columnCount);        
-        range.values = values;
-        sheetDest.getUsedRange().format.autofitColumns();
-        sheetDest.getUsedRange().format.autofitRows();
-       
-        let newTable = sheetDest.tables.add(range, true);
-        newTable.name = worksheetDest;
-        await context.sync();
+            let values = visibleRange.values;
+            let rowCount = values.length;
+            let columnCount = values[0].length;
+
+            context.workbook.worksheets.getItemOrNullObject(worksheetDest).delete();
+            let sheetDest = context.workbook.worksheets.add(worksheetDest);
+            let range = sheetDest.getRangeByIndexes(0, 0, rowCount, columnCount);
+            range.values = values;
+            sheetDest.getUsedRange().format.autofitColumns();
+            sheetDest.getUsedRange().format.autofitRows();
+
+            let newTable = sheetDest.tables.add(range, true);
+            newTable.name = worksheetDest;
+            await context.sync();
+        });
     });
 }
 
-//top!
-async function copyTableToAnotherSheet(){
-    await Excel.run(async (context) => {
-        let sheet1 = context.workbook.worksheets.getItem("Tabelle1");
-        const table = sheet1.tables.getItem("Tabelle1");
-        let range = table.getRange();
-        range.load("address");
-        await context.sync();
 
-        let sheet2 = context.workbook.worksheets.getItem("Tabelle3");
-        sheet2.getRange("A1").copyFrom(range);
-        await context.sync();
-    });
+async function log(msg) {
+    console.log(msg);
 }
+
 
 //top!
 async function getValuesFromColumn(worksheetSource, tableSource, column) {
@@ -93,44 +155,22 @@ async function getValuesFromColumn(worksheetSource, tableSource, column) {
             await context.sync();
             resolve(columnValues);
         });
-    })
-   
-}
-
-
-async function copyTableHeaders(tableName, sheetName) {
-    await Excel.run(async (context) => {
-        const sheet = context.workbook.worksheets.getItem(sheetName);
-        const targetCell = sheet.getRange("A1");
-        targetCell.formulas = [["="+tableName+"[#Headers]"]];
-        const spillRange = targetCell.getSpillingToRange();
-        spillRange.load("address");
-        sheet.getUsedRange().format.autofitColumns();
-        await context.sync();
     });
+
 }
 
-async function applyFilterFunction(sheetname, table, variable, value) {
+async function deleteLastWorksheet() {
     await Excel.run(async (context) => {
-        const sheet = context.workbook.worksheets.getItem(sheetname);
-        const targetCell = sheet.getRange("A2");
-        targetCell.formulas = [
-            ['=FILTER('+table+'[#All],' +table + '[[#All],['+variable+']]="'+value+'", "")']
-            //['=FILTER(Tabelle1[#All], Tabelle1[[#All],[A]]="1", "")']
-        ];
-        const spillRange = targetCell.getSpillingToRange();
-        spillRange.load("address");
-        sheet.getUsedRange().format.autofitColumns();
+        const sheets = context.workbook.worksheets;
+        sheets.load("items/name");
         await context.sync();
-    });
-}
-
-async function createSheet(sheetName) {
-    await Excel.run(async (context) => {
-        context.workbook.worksheets.getItemOrNullObject(sheetName).delete();
-        const sheet = context.workbook.worksheets.add(sheetName);
-        sheet.load("name, position");
-        await context.sync();
+        if (sheets.items.length > 1) {
+            const lastSheet = sheets.items[sheets.items.length - 1];
+            console.log(`Deleting worksheet named "${lastSheet.name}"`);
+            lastSheet.delete();
+            await context.sync();
+        } else {
+            console.log("Unable to delete the last worksheet in the workbook");    }
     });
 }
 
@@ -141,20 +181,18 @@ async function listWorksheets(dotNetReference) {
         sheets.load("items/name");
         await context.sync();
         let allSheets = [];
-
         for (let i in sheets.items) {
             const tables = sheets.items[i].tables;
-            tables.load('name, count, headers, columns')
+            tables.load('name, count, headers, columns');
             await context.sync();
-            let allTables = []
+            let allTables = [];
             for (let j in tables.items) {
                 let tableheaders = tables.items[j].columns.items;
-                let alltableheaders = []
-                for (let k in tableheaders)
-                {
+                let alltableheaders = [];
+                for (let k in tableheaders) {
                     alltableheaders.push(tableheaders[k].name);
                 }
-                allTables.push({ tablename: tables.items[j].name, categories: alltableheaders });
+                allTables.push({tablename: tables.items[j].name, categories: alltableheaders});
 
             }
             allSheets.push({sheetname: sheets.items[i].name, tables: allTables});

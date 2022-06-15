@@ -5,33 +5,49 @@
 
 
 <div>
-    <label for="tables" style="font-size: 12px">Available tables</label>
+    <label for="tables" style="font-size: 12px" @ShouldRender>Available tables</label>
     <FluentSelect id="tables" style="width: 280px; margin-bottom: 15px" Items=@_tables />
 </div>
 <div>
-     <label for="categories" style="font-size: 12px">Available categories (columns)</label>
-        <FluentSelect id="categories" style="width: 280px; margin-bottom: 30px" Items=@_categories />
+    <label for="categories" style="font-size: 12px">Available categories (columns)</label>
+    <FluentSelect id="categories" style="width: 280px; margin-bottom: 30px" Items=@_categories />
 </div>
+<FluentTextField @bind-Value="SelectedTable"></FluentTextField>
+<FluentTextField @bind-Value="SelectedVariable"></FluentTextField>
+<div>@SelectedTable</div>
+<div>@SelectedVariable</div>
+
+<FluentListbox @bind-Value=@SelectedTable>
+    @for (int i = 0; i < tables.Count; i++)
+    {
+        <FluentOption Value="@tables[i]"></FluentOption>
+    }
+</FluentListbox>
+<FluentListbox Items=@_categories />
 
 <FluentButton Appearance="Appearance.Outline" style="width: 280px;" @onclick="Write">CREATE</FluentButton>
+<FluentButton Appearance="Appearance.Outline" style="width: 280px;" @onclick="Delete">DELETE</FluentButton>
 
 @code{
-
-    private string SelectedTable => GetTables();
-    private string SelectedVariable => GetCats();
+    
+    private string? SelectedTable { get; set; } = "";
+    private string? SelectedVariable { get; set; } = "";
     private string SelectedSheet => GetSheet();
 
+    readonly List<string> categories = new();
+    readonly List<string> tables = new();
+    
     readonly List<Option<string>> _categories = new();
     readonly List<Option<string>> _tables = new();
     private List<WorksheetModel> Worksheets { get; set; } = new();
     private JsonSerializerOptions _options;
     private DotNetObjectReference<Index> _lDotNetReference;
+    
 
     protected override async Task OnInitializedAsync()
     {
         _lDotNetReference = DotNetObjectReference.Create(this);
         await _jsRuntimeService.InvokeVoidAsync("listWorksheets", _lDotNetReference);
-
         //StateHasChanged();
     }
     
@@ -49,26 +65,27 @@
     private async Task Write()
     {
         var sheet = SelectedSheet;
-        var table = SelectedTable;
-        var variable = SelectedVariable;
-        var json = await _jsRuntimeService.InvokeAsync<JsonElement>("getValuesFromColumn", sheet, table, variable);
+        var json = await _jsRuntimeService.InvokeAsync<JsonElement>("getValuesFromColumn", "Abfrage1", "Abfrage1", "agency_category");
 
         var tables = json.Deserialize<string[][]>(_options);
-
+        
         List<string> distinctValues = new();
         (tables ?? Array.Empty<string[]>()).ToList().ForEach(e =>
         {
             if (distinctValues.Contains(e[0]) == false)
                 distinctValues.Add(e[0]);
         });
-        foreach (var val in distinctValues)
-        {
-            string sheetNew = $"{table}_{variable}_{val}";
-            await _jsRuntimeService.InvokeVoidAsync("wrapper2", sheetNew, sheet, table, variable, val);
-        }
-        await _jsRuntimeService.InvokeVoidAsync("clearFilters", sheet, table);
+        await _jsRuntimeService.InvokeVoidAsync("add", "Abfrage1", "Abfrage1", "agency_category", distinctValues);
     }
-
+    
+    private async Task Delete()
+    {
+        //await _jsRuntimeService.InvokeVoidAsync("add", "Abfrage1", "Abfrage1", "agency_category");
+        await _jsRuntimeService.InvokeVoidAsync("deleteLastWorksheet");
+    }
+    
+    
+    
     [JSInvokable]
     public void CallbackAllWorksheets(JsonElement worksheetsArray)
     {
@@ -93,11 +110,16 @@
                     var option = new Option<string>
                     {
                         Selected = state,
-                        Key = i.ToString(),
+                        Key = table.Categories[i],
                         Value = table.Categories[i]
                     };
+                    if (state)
+                    {
+                        SelectedVariable = table.Categories[i];
+                    }
                     
                     _categories.Add(option);
+                    categories.Add(table.Categories[i]);
                 }
             }
         }
@@ -114,11 +136,16 @@
                 var option = new Option<string>
                 {
                     Selected = state,
-                    Key = i.ToString(),
+                    Key = worksheet.Tables[i].TableName,
                     Value = worksheet.Tables[i].TableName
                 };
+                if (state)
+                {
+                    SelectedTable = worksheet.Tables[i].TableName;
+                }
                 
                 _tables.Add(option);
+                tables.Add(worksheet.Tables[i].TableName);
             }
         }
     }
