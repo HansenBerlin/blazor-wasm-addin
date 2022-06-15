@@ -1,17 +1,14 @@
-async function wrapper2(sourceSheet, sourceTable, variable, v) {
+async function createSheetsByVariable(sourceSheet, sourceTable, variable, v) {
     await Office.onReady();
     return new Office.Promise(async function (resolve) {
         await Excel.run(async (context) => {
             for (let j = 0; j < v.length; j++) {
-                console.log(v[j] + " " + sourceSheet + " " + sourceTable + " " + variable);
                 let sheet = context.workbook.worksheets.getItem(sourceSheet);
                 sheet.load("items/name");
-                await context.sync();
+                await context.sync(); 
                 
                 let table = sheet.tables.getItem(sourceTable);
-                table.clearFilters();
-                console.log(context);
-                
+                table.clearFilters();                
                 await context.sync();
 
                 let filter = table.columns.getItem(variable).filter;
@@ -20,9 +17,7 @@ async function wrapper2(sourceSheet, sourceTable, variable, v) {
                     values: [v[j]]
                 });
                 await context.sync();
-
-                //await clearFilters(sourceSheet, sourceTable);
-                //await filterTable(sourceSheet, sourceTable, variable, j);
+               
                 let visibleRange = table.getRange().getVisibleView().load("values");
                 await sheet.sync();
 
@@ -39,8 +34,6 @@ async function wrapper2(sourceSheet, sourceTable, variable, v) {
 
                 let newTable = sheetDest.tables.add(range, true);
                 newTable.name = worksheetDest;
-
-                //await copyVisibleRange(sheet, table, sourceSheet + variable + j, context);
                 await context.sync();
             }
         });

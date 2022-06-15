@@ -7,8 +7,8 @@
 <div>@SelectedVariable</div>
 
 
-<div style="display: flex; flex-direction: column; margin-top: 12px;">
-    <label id="label1">tbl</label>
+<div style="display: flex; flex-direction: column; margin-top: 12px;width: 280px">
+    <label id="label1">Choose table</label>
     <FluentRadioGroup ValueChanged="Callback2" Required="true" aria-labelledby="label1" Name="fruits" Orientation="Orientation.Vertical">
         @foreach (var tab in tables)
         {
@@ -17,9 +17,9 @@
     </FluentRadioGroup>
 </div>
 
-<div style="display: flex; flex-direction: column; margin-top: 12px;">
-    <label id="label1">cats</label>
-    <FluentRadioGroup ValueChanged="Callback" Required="true" aria-labelledby="label1" Name="fruits" Orientation="Orientation.Vertical">
+<div style="display: flex; flex-direction: column; margin-top: 12px; width: 280px">
+    <label id="label2">Choose category</label>
+    <FluentRadioGroup ValueChanged="Callback" Required="true" aria-labelledby="label2" Name="fruits" Orientation="Orientation.Vertical">
         @foreach (var cat in categories)
             {
                 <FluentRadio Value=@cat>@cat</FluentRadio>
@@ -39,8 +39,8 @@
     readonly List<string> categories = new();
     readonly List<string> tables = new();
     
-    readonly List<Option<string>> _categories = new();
-    readonly List<Option<string>> _tables = new();
+    //readonly List<Option<string>> _categories = new();
+    //readonly List<Option<string>> _tables = new();
     private List<WorksheetModel> Worksheets { get; set; } = new();
     private JsonSerializerOptions _options;
     private DotNetObjectReference<Index> _lDotNetReference;
@@ -66,8 +66,8 @@
     
     private async Task Write()
     {
-        var sheet = SelectedSheet;
-        var json = await _jsRuntimeService.InvokeAsync<JsonElement>("getValuesFromColumn", "Abfrage1", SelectedTable, SelectedVariable);
+        var sheet = GetSheet();
+        var json = await _jsRuntimeService.InvokeAsync<JsonElement>("getValuesFromColumn", sheet, SelectedTable, SelectedVariable);
 
         var tables = json.Deserialize<string[][]>(_options);
         
@@ -77,115 +77,74 @@
             if (distinctValues.Contains(e[0]) == false)
                 distinctValues.Add(e[0]);
         });
-        await _jsRuntimeService.InvokeVoidAsync("add", "Abfrage1", SelectedTable, SelectedVariable, distinctValues);
+        await _jsRuntimeService.InvokeVoidAsync("add", sheet, SelectedTable, SelectedVariable, distinctValues);
     }
     
     private async Task Delete()
     {
-        //await _jsRuntimeService.InvokeVoidAsync("add", "Abfrage1", "Abfrage1", "agency_category");
         await _jsRuntimeService.InvokeVoidAsync("deleteLastWorksheet");
     }
-    
-    
-    
+
     [JSInvokable]
     public void CallbackAllWorksheets(JsonElement worksheetsArray)
     {
         var tables = worksheetsArray.Deserialize<WorksheetModel[]>(_options);
         Worksheets.Clear();
         Worksheets.AddRange(tables);
-        Update2();
-        Update();
-        //StateHasChanged();
+        UpdateTablesCollection();
+        UpdateCategoriesCollection();
     }
 
-    void Update()
+    void UpdateCategoriesCollection()
     {
-        _categories.Clear();
+        categories.Clear();
         foreach (var worksheet in Worksheets)
         {
             foreach (var table in worksheet.Tables)
             {
+                if (table.TableName != SelectedTable) continue;
                 for (int i = 0; i < table.Categories.Length; i++)
                 {
                     bool state = i == 0;
-                    var option = new Option<string>
-                    {
-                        Selected = state,
-                        Key = table.Categories[i],
-                        Value = table.Categories[i]
-                    };
                     if (state)
                     {
                         SelectedVariable = table.Categories[i];
                     }
                     
-                    _categories.Add(option);
                     categories.Add(table.Categories[i]);
                 }
             }
         }
     }
     
-    void Update2()
+    void UpdateTablesCollection()
     {
-        _tables.Clear();
+        tables.Clear();
         foreach (var worksheet in Worksheets)
         {
             for (int i = 0; i < worksheet.Tables.Length; i++)
             {
                 bool state = i == 0;
-                var option = new Option<string>
-                {
-                    Selected = state,
-                    Key = worksheet.Tables[i].TableName,
-                    Value = worksheet.Tables[i].TableName
-                };
                 if (state)
                 {
                     SelectedTable = worksheet.Tables[i].TableName;
                 }
                 
-                _tables.Add(option);
                 tables.Add(worksheet.Tables[i].TableName);
             }
         }
     }
     
-    string GetCats()
-    {
-        foreach (var cat in _categories)
-        {
-            if (cat.Selected)
-                return cat.Value;
-        }
-        return "not cat found";
-    }
-    
-    string GetTables()
-    {
-        foreach (var tab in _tables)
-        {
-            if (tab.Selected)
-                return tab.Value;
-        }
-        return "not table found";
-    }
-    
     string GetSheet()
     {
-        var table = GetTables();
-        foreach (var tab in _tables)
+        foreach (var tab in tables)
         {
-            if (tab.Selected)
+            foreach (var sheet in Worksheets)
             {
-                foreach (var sheet in Worksheets)
+                foreach (var t in sheet.Tables)
                 {
-                    foreach (var t in sheet.Tables)
-                    {
-                        if (t.TableName == table)
-                            return sheet.SheetName;
-                    }
+                    if (t.TableName == tab)
+                        return sheet.SheetName;
                 }
             }
         }
@@ -200,6 +159,7 @@
     private void Callback2(string? obj)
     {
         SelectedTable = obj;
+        UpdateCategoriesCollection();
     }
 
 }
